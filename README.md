@@ -130,4 +130,4 @@ Conexión con punto de venta, cámaras o sensores · app móvil · simulación d
 
 ## Proyecto — contexto académico
 
-UAT — Facultad de Ingeniería Tampico · Equipo Geminero · Proyecto Integrador (Unidad 1)
+UAT — Facultad de Ingeniería Tampico · Equipo Geminero · Proyecto Integrador
