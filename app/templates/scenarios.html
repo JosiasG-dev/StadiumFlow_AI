@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% set active = 'scenarios' %}
+{% block title %}Escenarios — StadiumFlow AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Escenarios</h1>
+  <a href="/scenarios/new" class="btn btn--primary">+ Nuevo escenario</a>
+</div>
+
+{% if scenarios %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>ID</th><th>Nombre</th><th>Tipo de evento</th><th>Aforo</th><th>Puestos</th><th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for sc in scenarios %}
+    <tr>
+      <td><code>{{ sc.id }}</code></td>
+      <td>{{ sc.name }}</td>
+      <td>{{ sc.event_type }}</td>
+      <td>{{ sc.attendance }}</td>
+      <td>{{ sc.stands|length }}</td>
+      <td class="actions-cell">
+        <a href="/scenarios/{{ sc.id }}/edit" class="btn btn--sm btn--secondary">Editar</a>
+        <button class="btn btn--sm btn--secondary" onclick="duplicateScenario('{{ sc.id }}')">Duplicar</button>
+        <button class="btn btn--sm btn--danger" onclick="deleteScenario('{{ sc.id }}')">Eliminar</button>
+        <button class="btn btn--sm btn--primary" onclick="startRun('{{ sc.id }}', 'base')">▶ Base</button>
+        <button class="btn btn--sm btn--accent"  onclick="startRun('{{ sc.id }}', 'agent')">🤖 Con agente</button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+  <p>Todavía no hay escenarios. Crea el primero para empezar.</p>
+  <a href="/scenarios/new" class="btn btn--primary">Crear escenario</a>
+</div>
+{% endif %}
+
+<div id="msg" class="msg msg--hidden"></div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+  import { api } from '/static/js/api.js';
+
+  window.deleteScenario = async function(id) {
+    if (!confirm(`¿Eliminar el escenario "${id}"? Esta acción no se puede deshacer.`)) return;
+    try {
+      await api.delete(`/api/scenarios/${id}`);
+      location.reload();
+    } catch(e) { showMsg(e.message, 'error'); }
+  };
+
+  window.duplicateScenario = async function(id) {
+    const newId = prompt('Nuevo ID (slug):');
+    if (!newId) return;
+    const newName = prompt('Nuevo nombre:');
+    if (!newName) return;
+    try {
+      await api.post(`/api/scenarios/${id}/duplicate`, { new_id: newId, new_name: newName });
+      location.reload();
+    } catch(e) { showMsg(e.message, 'error'); }
+  };
+
+  window.startRun = async function(scenarioId, mode) {
+    try {
+      const data = await api.post('/api/runs', { scenario_id: scenarioId, mode });
+      window.location.href = `/simulation/${data.run_id}`;
+    } catch(e) { showMsg(e.message, 'error'); }
+  };
+
+  function showMsg(text, type) {
+    const el = document.getElementById('msg');
+    el.textContent = text;
+    el.className = `msg msg--${type}`;
+    setTimeout(() => el.className = 'msg msg--hidden', 4000);
+  }
+</script>
+{% endblock %}

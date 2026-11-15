@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% set active = 'settings' %}
+{% block title %}Ajustes — StadiumFlow AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Ajustes</h1>
+</div>
+<p class="page-subtitle" style="margin-bottom:1.5rem">Preferencias de la aplicación. Se guardan en el navegador.</p>
+
+<div class="form-card" id="settings-form">
+
+  <details class="form-section" open>
+    <summary class="form-section__title">🗺️ Mapa de calor — umbrales de espera</summary>
+    <div class="form-section__body">
+      <p class="form-hint">Los colores del mapa cambian según la espera estimada en minutos de cada puesto.</p>
+      <div class="form-row">
+        <label for="s-green">Verde: espera menor de (min)</label>
+        <input id="s-green" data-key="heatmap_green_max" type="number" min="0.5" max="10" step="0.5" value="3">
+      </div>
+      <div class="form-row">
+        <label for="s-yellow">Amarillo: espera entre verde y (min)</label>
+        <input id="s-yellow" data-key="heatmap_yellow_max" type="number" min="1" max="20" step="0.5" value="6">
+      </div>
+      <div class="color-preview" id="color-preview">
+        <span class="chip chip--green">Verde &lt; <span id="prev-green">3</span> min</span>
+        <span class="chip chip--yellow">Amarillo &lt; <span id="prev-yellow">6</span> min</span>
+        <span class="chip chip--red">Rojo ≥ <span id="prev-yellow2">6</span> min</span>
+      </div>
+    </div>
+  </details>
+
+  <details class="form-section" open>
+    <summary class="form-section__title">▶️ Simulación</summary>
+    <div class="form-section__body">
+      <div class="form-row">
+        <label for="s-speed">Velocidad de reproducción por defecto (ms entre pasos)</label>
+        <select id="s-speed" data-key="default_speed">
+          <option value="1000">1× (lento)</option>
+          <option value="500" selected>2× (normal)</option>
+          <option value="250">4× (rápido)</option>
+          <option value="100">10× (muy rápido)</option>
+        </select>
+      </div>
+    </div>
+  </details>
+
+  <details class="form-section" open>
+    <summary class="form-section__title">📊 Comparación</summary>
+    <div class="form-section__body">
+      <div class="form-row">
+        <label for="s-replicas">Número de réplicas por defecto</label>
+        <input id="s-replicas" data-key="default_replicas" type="number" min="1" max="30" value="10">
+      </div>
+      <div class="form-row">
+        <label for="s-seed">Semilla base por defecto</label>
+        <input id="s-seed" data-key="default_seed" type="number" value="42">
+      </div>
+    </div>
+  </details>
+
+  <div id="settings-msg" class="msg msg--hidden"></div>
+  <div class="form-actions">
+    <button class="btn btn--primary" onclick="saveSettings()">Guardar preferencias</button>
+    <button class="btn btn--secondary" onclick="resetSettings()">Restaurar valores por defecto</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const DEFAULTS = {
+    heatmap_green_max: 3, heatmap_yellow_max: 6, default_speed: 500,
+    default_replicas: 10, default_seed: 42
+  };
+
+  function loadSettings() {
+    const stored = JSON.parse(localStorage.getItem('stadiumflow_settings') || '{}');
+    const cfg = { ...DEFAULTS, ...stored };
+    document.querySelectorAll('[data-key]').forEach(el => {
+      const k = el.dataset.key;
+      if (cfg[k] !== undefined) el.value = cfg[k];
+    });
+    updatePreview(cfg);
+  }
+
+  function updatePreview(cfg) {
+    const g = cfg.heatmap_green_max ?? DEFAULTS.heatmap_green_max;
+    const y = cfg.heatmap_yellow_max ?? DEFAULTS.heatmap_yellow_max;
+    ['prev-green'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = g; });
+    ['prev-yellow','prev-yellow2'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = y; });
+  }
+
+  window.saveSettings = function() {
+    const cfg = {};
+    document.querySelectorAll('[data-key]').forEach(el => {
+      cfg[el.dataset.key] = isNaN(el.value) ? el.value : Number(el.value);
+    });
+    localStorage.setItem('stadiumflow_settings', JSON.stringify(cfg));
+    updatePreview(cfg);
+    const msg = document.getElementById('settings-msg');
+    msg.textContent = 'Preferencias guardadas.';
+    msg.className = 'msg msg--success';
+    setTimeout(() => msg.className = 'msg msg--hidden', 3000);
+  };
+
+  window.resetSettings = function() {
+    localStorage.removeItem('stadiumflow_settings');
+    loadSettings();
+  };
+
+  // Actualizar preview en tiempo real
+  document.querySelectorAll('[data-key="heatmap_green_max"], [data-key="heatmap_yellow_max"]').forEach(el => {
+    el.addEventListener('input', () => {
+      const g = document.querySelector('[data-key="heatmap_green_max"]').value;
+      const y = document.querySelector('[data-key="heatmap_yellow_max"]').value;
+      updatePreview({ heatmap_green_max: g, heatmap_yellow_max: y });
+    });
+  });
+
+  loadSettings();
+</script>
+{% endblock %}

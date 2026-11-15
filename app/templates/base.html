@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}StadiumFlow AI{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <nav class="navbar" role="navigation" aria-label="Navegación principal">
+    <div class="navbar__brand">
+      <a href="/" class="navbar__logo">⚽ StadiumFlow AI</a>
+    </div>
+    <ul class="navbar__links">
+      <li><a href="/scenarios" class="navbar__link {% if active == 'scenarios' %}navbar__link--active{% endif %}">Escenarios</a></li>
+      <li><a href="/" class="navbar__link {% if active == 'simulation' %}navbar__link--active{% endif %}">Simulación</a></li>
+      <li><a href="/" class="navbar__link {% if active == 'agent' %}navbar__link--active{% endif %}">Agente IA</a></li>
+      <li><a href="/reports" class="navbar__link {% if active == 'reports' %}navbar__link--active{% endif %}">Informes</a></li>
+      <li><a href="/settings" class="navbar__link {% if active == 'settings' %}navbar__link--active{% endif %}">Ajustes</a></li>
+    </ul>
+  </nav>
+
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <p>StadiumFlow AI — MVP v0.1 · Datos sintéticos, solo ilustrativos · 
+       <span class="badge badge--info">Agente local provisional</span>
+    </p>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

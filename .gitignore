@@ -1,0 +1,30 @@
+# Entorno virtual
+.venv/
+venv/
+env/
+
+# Variables de entorno secretas — NUNCA subir al repositorio
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# pytest / ruff cache
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Datos generados en tiempo de ejecución (excepto los escenarios precargados)
+data/runs/
+data/audit/
+data/scenarios/dup-test-scenario.json
+data/scenarios/test-api-sc.json
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

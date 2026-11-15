@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% set active = 'reports' %}
+{% block title %}Informes — StadiumFlow AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Informes — Comparación base vs. agente</h1>
+</div>
+
+<div class="form-card">
+  <h2>Nueva comparación</h2>
+  <div class="form-row">
+    <label for="sel-scenario">Escenario</label>
+    <select id="sel-scenario">
+      <option value="">— Seleccionar —</option>
+      {% for sc in scenarios %}
+        <option value="{{ sc.id }}">{{ sc.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="inp-replicas">Réplicas</label>
+    <input id="inp-replicas" type="number" min="1" max="30" value="10">
+  </div>
+  <button class="btn btn--primary" id="btn-compare">Comparar</button>
+  <div id="compare-status" class="msg msg--hidden"></div>
+</div>
+
+<div id="results-section" class="section" style="display:none">
+  <h2>Resultados</h2>
+  <div id="results-summary" class="results-summary"></div>
+  <canvas id="chart-wait" class="chart-canvas"></canvas>
+  <canvas id="chart-abandonment" class="chart-canvas"></canvas>
+  <div class="form-actions">
+  <button class="btn btn--secondary" id="btn-export-csv">Exportar CSV</button>
+  <button class="btn btn--secondary" id="btn-export-json">Exportar JSON</button>
+  <button class="btn btn--primary"   id="btn-export-pdf">Exportar PDF</button>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/vendor/chart.umd.min.js"></script>
+<script type="module">
+  import { api } from '/static/js/api.js';
+  import { renderComparisonCharts } from '/static/js/charts.js';
+
+  let currentCompId = null;
+
+  document.getElementById('btn-compare').addEventListener('click', async () => {
+    const scenarioId = document.getElementById('sel-scenario').value;
+    const replicas = parseInt(document.getElementById('inp-replicas').value);
+    if (!scenarioId) { showStatus('Selecciona un escenario.', 'error'); return; }
+
+    showStatus('Ejecutando comparación…', 'info');
+    try {
+      const result = await api.post('/api/comparisons', { scenario_id: scenarioId, replicas });
+      currentCompId = result.id;
+      showStatus('Comparación completada.', 'success');
+      renderResults(result);
+    } catch(e) {
+      showStatus('Error: ' + e.message, 'error');
+    }
+  });
+
+  function renderResults(result) {
+    const section = document.getElementById('results-section');
+    section.style.display = '';
+    const summary = document.getElementById('results-summary');
+    summary.innerHTML = `
+      <p><strong>Escenario:</strong> ${result.scenario_id} · <strong>Réplicas:</strong> ${result.replicas}</p>
+      <p>Reducción de espera promedio: <strong>${result.global_avg_wait_reduction_pct}%</strong></p>
+      <p>Reducción de abandono: <strong>${result.global_abandonment_reduction_pct}%</strong></p>
+      <p class="notice">Nota: la meta del ≥20% de reducción en medio tiempo es una hipótesis del protocolo y <em>no</em> un resultado garantizado.</p>
+    `;
+    renderComparisonCharts(result);
+  }
+
+  document.getElementById('btn-export-csv').addEventListener('click', () => {
+    if (currentCompId) window.location.href = `/api/comparisons/${currentCompId}/export?format=csv`;
+  });
+  document.getElementById('btn-export-json').addEventListener('click', () => {
+    if (currentCompId) window.location.href = `/api/comparisons/${currentCompId}/export?format=json`;
+  });
+  document.getElementById('btn-export-pdf').addEventListener('click', () => {
+    if (currentCompId) window.open(`/api/comparisons/${currentCompId}/export?format=pdf`, '_blank');
+  });
+
+  function showStatus(text, type) {
+    const el = document.getElementById('compare-status');
+    el.textContent = text;
+    el.className = `msg msg--${type}`;
+  }
+</script>
+{% endblock %}

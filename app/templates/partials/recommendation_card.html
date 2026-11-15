@@ -1,0 +1,15 @@
+<div class="rec-card rec-card--{{ rec.status }}">
+  <div class="rec-card__header">
+    <span class="badge badge--{{ rec.status }}">{{ rec.status }}</span>
+    <span class="rec-card__minute">Min. {{ rec.minute }}</span>
+    <span class="rec-card__id">{{ rec.id }}</span>
+  </div>
+  <p class="rec-card__motive">{{ rec.motive }}</p>
+  <p class="rec-card__summary">{{ rec.summary }}</p>
+  {% if rec.expected_effect %}
+  <div class="rec-card__effect">
+    <span>Espera: {{ rec.expected_effect.avg_wait_before_min }} → {{ rec.expected_effect.avg_wait_after_min }} min</span>
+    <span>Abandono: {{ rec.expected_effect.abandonment_before_pct }}% → {{ rec.expected_effect.abandonment_after_pct }}%</span>
+  </div>
+  {% endif %}
+</div>

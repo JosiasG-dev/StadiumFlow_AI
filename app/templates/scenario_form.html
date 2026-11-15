@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% set active = 'scenarios' %}
+{% block title %}{% if action == 'crear' %}Nuevo escenario{% else %}Editar: {{ scenario.name }}{% endif %} — StadiumFlow AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{% if action == 'crear' %}Nuevo escenario{% else %}Editar: {{ scenario.name }}{% endif %}</h1>
+  <a href="/scenarios" class="btn btn--secondary">← Volver</a>
+</div>
+
+<div id="msg" class="msg msg--hidden"></div>
+
+<form id="scenario-form" class="form-scenario">
+
+  <!-- ── Sección General ───────────────────────────────────────────── -->
+  <details class="form-section" open>
+    <summary class="form-section__title">📋 General</summary>
+    <div class="form-section__body">
+      <div class="form-row">
+        <label for="f-id">ID (slug) *</label>
+        <div>
+          <input id="f-id" name="id" type="text" required
+                 pattern="[a-z0-9_\-]{3,40}" title="Solo minúsculas, dígitos, guion o guion bajo (3–40 caracteres)"
+                 value="{{ scenario.id if scenario else '' }}"
+                 {% if action == 'editar' %}readonly{% endif %}>
+          <small class="form-hint">Solo letras minúsculas, dígitos, guion o guion bajo. Ejemplo: partido_liga_2026</small>
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="f-name">Nombre del evento *</label>
+        <input id="f-name" name="name" type="text" required value="{{ scenario.name if scenario else '' }}">
+      </div>
+      <div class="form-row">
+        <label for="f-event">Tipo de evento</label>
+        <input id="f-event" name="event_type" type="text" value="{{ scenario.event_type if scenario else 'fútbol' }}">
+      </div>
+      <div class="form-row">
+        <label for="f-attendance">Aforo atendido por los puestos *</label>
+        <div>
+          <input id="f-attendance" name="attendance" type="number" min="100" max="100000" required
+                 value="{{ scenario.attendance if scenario else 2500 }}">
+          <small class="form-hint">Personas que pueden comprar en los puestos. Valor sintético.</small>
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="f-seed">Semilla aleatoria</label>
+        <input id="f-seed" name="seed" type="number" value="{{ scenario.seed if scenario else 42 }}">
+      </div>
+    </div>
+  </details>
+
+  <!-- ── Sección Etapas del evento ────────────────────────────────── -->
+  <details class="form-section" open>
+    <summary class="form-section__title">⏱ Etapas del evento</summary>
+    <div class="form-section__body">
+      <p class="form-hint">Duración en minutos y probabilidad de que un aficionado haga una compra durante esa etapa.</p>
+      <table class="table table--sm" id="phases-table">
+        <thead>
+          <tr><th>Etapa</th><th>Duración (min)</th><th>Prob. de compra</th></tr>
+        </thead>
+        <tbody>
+          {% set phase_labels = {'antes': 'Antes del partido', 'primer_tiempo': '1.er tiempo', 'medio_tiempo': 'Medio tiempo', 'segundo_tiempo': '2.º tiempo', 'salida': 'Salida'} %}
+          {% set phase_order = ['antes', 'primer_tiempo', 'medio_tiempo', 'segundo_tiempo', 'salida'] %}
+          {% for pname in phase_order %}
+            {% if scenario %}
+              {% set phase = scenario.phases | selectattr('name', 'equalto', pname) | first %}
+            {% else %}
+              {% set phase = none %}
+            {% endif %}
+            {% set defaults = {'antes': (60, 0.30), 'primer_tiempo': (45, 0.08), 'medio_tiempo': (15, 0.55), 'segundo_tiempo': (45, 0.10), 'salida': (15, 0.05)} %}
+          <tr>
+            <td>{{ phase_labels[pname] }}</td>
+            <td><input name="phase_duration_{{ pname }}" type="number" min="1" max="180" class="inp-sm"
+                       value="{{ phase.duration_min if phase else defaults[pname][0] }}"></td>
+            <td><input name="phase_prob_{{ pname }}" type="number" min="0" max="2" step="0.01" class="inp-sm"
+                       value="{{ phase.purchase_prob if phase else defaults[pname][1] }}"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <!-- ── Sección Puestos ──────────────────────────────────────────── -->
+  <details class="form-section" open>
+    <summary class="form-section__title">🏪 Puestos de venta</summary>
+    <div class="form-section__body">
+      <p class="form-hint">Cajas instaladas ≥ cajas abiertas ≥ 0; cajas abiertas ≤ personal.</p>
+      <div class="table-scroll">
+      <table class="table table--sm" id="stands-table">
+        <thead>
+          <tr><th>ID</th><th>Nombre</th><th>Cajas inst.</th><th>Cajas abiertas</th><th>Personal</th><th>Recolec. rápida</th><th>Ticket prom. ($)</th></tr>
+        </thead>
+        <tbody>
+          {% set default_stands = [
+            ('P1','Puesto 1',6,4,5,false,120), ('P2','Puesto 2',6,4,5,false,120),
+            ('P3','Puesto 3',6,4,5,false,120), ('P4','Puesto 4',6,4,5,false,120),
+            ('P5','Puesto 5',6,4,5,false,120), ('P6','Puesto 6',6,4,5,false,120),
+            ('P7','Puesto 7',6,4,5,false,120), ('P8','Puesto 8',6,4,5,false,120),
+            ('P9','Puesto 9',6,4,5,false,120), ('P10','Puesto 10',6,4,5,false,120)
+          ] %}
+          {% set stands_data = scenario.stands if scenario else default_stands %}
+          {% for st in stands_data %}
+            {% if scenario %}
+              {% set sid = st.id %}
+              {% set sname = st.name %}
+              {% set sinst = st.registers_installed %}
+              {% set sopen = st.registers_open %}
+              {% set sstaff = st.staff %}
+              {% set spickup = st.pickup_enabled %}
+              {% set sticket = st.avg_ticket %}
+            {% else %}
+              {% set sid = st[0] %}
+              {% set sname = st[1] %}
+              {% set sinst = st[2] %}
+              {% set sopen = st[3] %}
+              {% set sstaff = st[4] %}
+              {% set spickup = st[5] %}
+              {% set sticket = st[6] %}
+            {% endif %}
+          <tr>
+            <td>{{ sid }}</td>
+            <td><input name="stand_name_{{ sid }}" value="{{ sname }}" class="inp-sm inp-name"></td>
+            <td><input name="stand_inst_{{ sid }}" type="number" min="1" max="20" value="{{ sinst }}" class="inp-sm inp-num"></td>
+            <td><input name="stand_open_{{ sid }}" type="number" min="0" max="20" value="{{ sopen }}" class="inp-sm inp-num"></td>
+            <td><input name="stand_staff_{{ sid }}" type="number" min="1" max="50" value="{{ sstaff }}" class="inp-sm inp-num"></td>
+            <td><input name="stand_pickup_{{ sid }}" type="checkbox" {% if spickup %}checked{% endif %}></td>
+            <td><input name="stand_ticket_{{ sid }}" type="number" min="0" value="{{ sticket }}" class="inp-sm inp-num"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </details>
+
+  <!-- ── Sección Perfiles de aficionado ───────────────────────────── -->
+  <details class="form-section" open>
+    <summary class="form-section__title">👥 Perfiles de aficionado</summary>
+    <div class="form-section__body">
+      <p class="form-hint">La suma de proporciones debe ser 1 ± 0.01.</p>
+      <table class="table table--sm">
+        <thead>
+          <tr><th>Perfil</th><th>Proporción (0–1)</th><th>Tiempo de servicio (seg)</th><th>Paciencia máx. (min)</th></tr>
+        </thead>
+        <tbody>
+          {% set profile_labels = {'compra_rapida': 'Compra rápida', 'compra_grupo': 'Compra en grupo', 'pedido_movil': 'Pedido móvil'} %}
+          {% set profile_defaults = {'compra_rapida': (0.55, 45, 6), 'compra_grupo': (0.30, 120, 8), 'pedido_movil': (0.15, 30, 10)} %}
+          {% for pname, plabel in profile_labels.items() %}
+            {% if scenario %}
+              {% set prof = scenario.profiles | selectattr('name', 'equalto', pname) | first %}
+            {% else %}
+              {% set prof = none %}
+            {% endif %}
+          <tr>
+            <td>{{ plabel }}</td>
+            <td><input name="prof_share_{{ pname }}" type="number" min="0" max="1" step="0.01" class="inp-sm inp-num"
+                       value="{{ prof.share if prof else profile_defaults[pname][0] }}"></td>
+            <td><input name="prof_service_{{ pname }}" type="number" min="1" max="600" class="inp-sm inp-num"
+                       value="{{ prof.service_seconds if prof else profile_defaults[pname][1] }}"></td>
+            <td><input name="prof_patience_{{ pname }}" type="number" min="1" max="60" step="0.5" class="inp-sm inp-num"
+                       value="{{ prof.patience_min if prof else profile_defaults[pname][2] }}"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <!-- ── Sección Comportamiento ────────────────────────────────────── -->
+  <details class="form-section" open>
+    <summary class="form-section__title">⚙️ Comportamiento y palancas</summary>
+    <div class="form-section__body">
+      <div class="form-row">
+        <label for="f-redirect">Cumplimiento de redirecciones (0–1)</label>
+        <div>
+          <input id="f-redirect" name="redirect_compliance" type="number" min="0" max="1" step="0.05"
+                 value="{{ scenario.redirect_compliance if scenario else 0.6 }}">
+          <small class="form-hint">Fracción de aficionados que siguen la indicación del agente. Supuesto: 0.60.</small>
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="f-mobile">Proporción de pedido móvil (0–1)</label>
+        <input id="f-mobile" name="mobile_share" type="number" min="0" max="1" step="0.05"
+               value="{{ scenario.mobile_share if scenario else 0.15 }}">
+      </div>
+      <div class="form-row">
+        <label for="f-anticipation">Palanca de anticipación (0–0.5)</label>
+        <div>
+          <input id="f-anticipation" name="anticipation_share" type="number" min="0" max="0.5" step="0.05"
+                 value="{{ scenario.anticipation_share if scenario else 0.0 }}">
+          <small class="form-hint">Fracción de la demanda del medio tiempo que se adelanta a los últimos 5 min del 1.er tiempo.</small>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn--primary">
+      {% if action == 'crear' %}Crear escenario{% else %}Guardar cambios{% endif %}
+    </button>
+    <a href="/scenarios" class="btn btn--secondary">Cancelar</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+  import { api } from '/static/js/api.js';
+
+  const form = document.getElementById('scenario-form');
+  const action = '{{ action }}';
+  const scenarioId = '{{ scenario.id if scenario else "" }}';
+
+  // IDs de los 10 puestos
+  const STAND_IDS = ['P1','P2','P3','P4','P5','P6','P7','P8','P9','P10'];
+  const PHASE_NAMES = ['antes','primer_tiempo','medio_tiempo','segundo_tiempo','salida'];
+  const PROFILE_NAMES = ['compra_rapida','compra_grupo','pedido_movil'];
+
+  // Coordenadas fijas de los puestos (posición en el SVG del recinto)
+  const STAND_COORDS = {
+    P1:[200,50], P2:[350,30], P3:[500,30], P4:[650,50], P5:[750,200],
+    P6:[650,370], P7:[500,400], P8:[350,400], P9:[200,370], P10:[100,200]
+  };
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const msgEl = document.getElementById('msg');
+
+    // Construir fases
+    const phases = PHASE_NAMES.map(pname => ({
+      name: pname,
+      duration_min: parseInt(fd.get(`phase_duration_${pname}`)),
+      purchase_prob: parseFloat(fd.get(`phase_prob_${pname}`))
+    }));
+
+    // Construir puestos (mantener coordenadas y zone_capacity originales)
+    const stands = STAND_IDS.map(sid => ({
+      id: sid,
+      name: fd.get(`stand_name_${sid}`) || sid,
+      x: STAND_COORDS[sid][0],
+      y: STAND_COORDS[sid][1],
+      registers_installed: parseInt(fd.get(`stand_inst_${sid}`)),
+      registers_open: parseInt(fd.get(`stand_open_${sid}`)),
+      staff: parseInt(fd.get(`stand_staff_${sid}`)),
+      pickup_enabled: fd.get(`stand_pickup_${sid}`) === 'on',
+      zone_capacity: 60,
+      avg_ticket: parseFloat(fd.get(`stand_ticket_${sid}`))
+    }));
+
+    // Construir perfiles
+    const profiles = PROFILE_NAMES.map(pname => ({
+      name: pname,
+      share: parseFloat(fd.get(`prof_share_${pname}`)),
+      service_seconds: parseFloat(fd.get(`prof_service_${pname}`)),
+      patience_min: parseFloat(fd.get(`prof_patience_${pname}`))
+    }));
+
+    // Sectores (fijos, se reutilizan del escenario base)
+    const sectors = [
+      {id:"S1",name:"Sector Norte Izq.", x:250,y:80,  share:0.14},
+      {id:"S2",name:"Sector Norte Der.", x:550,y:80,  share:0.14},
+      {id:"S3",name:"Sector Este",       x:720,y:210, share:0.12},
+      {id:"S4",name:"Sector Sur Der.",   x:620,y:340, share:0.13},
+      {id:"S5",name:"Sector Sur Izq.",   x:280,y:340, share:0.13},
+      {id:"S6",name:"Sector Oeste",      x:130,y:210, share:0.12},
+      {id:"S7",name:"Palco Norte",       x:400,y:60,  share:0.11},
+      {id:"S8",name:"Palco Sur",         x:400,y:360, share:0.11}
+    ];
+
+    const payload = {
+      id: fd.get('id') || scenarioId,
+      name: fd.get('name'),
+      event_type: fd.get('event_type') || 'fútbol',
+      attendance: parseInt(fd.get('attendance')),
+      seed: parseInt(fd.get('seed')),
+      redirect_compliance: parseFloat(fd.get('redirect_compliance')),
+      mobile_share: parseFloat(fd.get('mobile_share')),
+      anticipation_share: parseFloat(fd.get('anticipation_share')),
+      phases, stands, sectors, profiles
+    };
+
+    try {
+      if (action === 'crear') {
+        await api.post('/api/scenarios', payload);
+      } else {
+        await api.put(`/api/scenarios/${scenarioId}`, payload);
+      }
+      window.location.href = '/scenarios';
+    } catch(err) {
+      msgEl.textContent = err.message;
+      msgEl.className = 'msg msg--error';
+      window.scrollTo(0, 0);
+    }
+  });
+</script>
+{% endblock %}

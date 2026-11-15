@@ -1,0 +1,5 @@
+fastapi>=0.111.0,<0.200.0
+uvicorn>=0.29.0,<0.35.0
+jinja2>=3.1.0,<4.0.0
+pydantic>=2.7.0,<3.0.0
+pydantic-settings>=2.2.0,<3.0.0

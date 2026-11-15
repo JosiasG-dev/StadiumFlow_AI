@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Inicio — StadiumFlow AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>StadiumFlow AI</h1>
+  <p class="page-subtitle">Simulador de logística de zonas de alimentos y bebidas con agente de IA</p>
+</div>
+
+<div class="home-grid">
+  <a href="/scenarios" class="home-card">
+    <div class="home-card__icon">📋</div>
+    <h2 class="home-card__title">Escenarios</h2>
+    <p class="home-card__desc">Configura el recinto, las fases del evento y los puestos de venta.</p>
+    {% if scenarios %}
+      <span class="badge badge--info">{{ scenarios|length }} escenario(s)</span>
+    {% endif %}
+  </a>
+
+  <a href="/" class="home-card" id="nav-simulation">
+    <div class="home-card__icon">▶️</div>
+    <h2 class="home-card__title">Simulación</h2>
+    <p class="home-card__desc">Ejecuta el escenario base y visualiza el mapa de calor en tiempo real.</p>
+  </a>
+
+  <a href="/" class="home-card" id="nav-agent">
+    <div class="home-card__icon">🤖</div>
+    <h2 class="home-card__title">Agente IA</h2>
+    <p class="home-card__desc">Recibe recomendaciones del agente y decide cuáles aplicar.</p>
+    <span class="badge badge--warn">Agente local provisional</span>
+  </a>
+
+  <a href="/reports" class="home-card">
+    <div class="home-card__icon">📊</div>
+    <h2 class="home-card__title">Informes</h2>
+    <p class="home-card__desc">Compara base vs. agente con múltiples réplicas y exporta los resultados.</p>
+  </a>
+</div>
+
+{% if scenarios %}
+<section class="section">
+  <h2>Escenarios recientes</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Aforo</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sc in scenarios[:5] %}
+      <tr>
+        <td>{{ sc.name }}</td>
+        <td>{{ sc.event_type }}</td>
+        <td>{{ sc.attendance }}</td>
+        <td>
+          <a href="/scenarios/{{ sc.id }}/edit" class="btn btn--sm btn--secondary">Editar</a>
+          <button class="btn btn--sm btn--primary" onclick="startRun('{{ sc.id }}', 'base')">Simular base</button>
+          <button class="btn btn--sm btn--accent"  onclick="startRun('{{ sc.id }}', 'agent')">Con agente</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% else %}
+<div class="empty-state">
+  <p>No hay escenarios configurados todavía.</p>
+  <a href="/scenarios/new" class="btn btn--primary">Crear primer escenario</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+  import { api } from '/static/js/api.js';
+
+  window.startRun = async function(scenarioId, mode) {
+    try {
+      const data = await api.post('/api/runs', { scenario_id: scenarioId, mode });
+      const runId = data.run_id;
+      if (mode === 'agent') {
+        window.location.href = `/simulation/${runId}?mode=agent`;
+      } else {
+        window.location.href = `/simulation/${runId}`;
+      }
+    } catch (e) {
+      alert('Error al crear corrida: ' + e.message);
+    }
+  };
+</script>
+{% endblock %}

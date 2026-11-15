@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% set active = 'simulation' %}
+{% block title %}Simulación {{ run_id }} — StadiumFlow AI{% endblock %}
+
+{% block content %}
+<div class="sim-layout">
+  <!-- Barra superior: KPIs globales -->
+  <header class="sim-header">
+    <div class="kpi-bar" id="kpi-bar">
+      <div class="kpi-card">
+        <span class="kpi-card__label">Espera promedio</span>
+        <span class="kpi-card__value" id="kpi-avg-wait">—</span>
+        <span class="kpi-card__unit">min</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-card__label">Fila más larga</span>
+        <span class="kpi-card__value" id="kpi-max-queue">—</span>
+        <span class="kpi-card__unit">personas</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-card__label">Se van sin comprar</span>
+        <span class="kpi-card__value" id="kpi-abandonment">—</span>
+        <span class="kpi-card__unit">%</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-card__label">Ocupación puestos</span>
+        <span class="kpi-card__value" id="kpi-occupancy">—</span>
+        <span class="kpi-card__unit">%</span>
+      </div>
+    </div>
+    <div class="sim-controls">
+      <button class="btn btn--primary" id="btn-play" onclick="simCtrl.togglePlay()">▶ Iniciar</button>
+      <button class="btn btn--secondary" id="btn-step1"  onclick="simCtrl.stepN(1)">+1 min</button>
+      <button class="btn btn--secondary" id="btn-step5"  onclick="simCtrl.stepN(5)">+5 min</button>
+      <button class="btn btn--secondary" id="btn-end"    onclick="simCtrl.runToEnd()">Fin rápido</button>
+      <button class="btn btn--danger"    id="btn-reset"  onclick="simCtrl.reset()">Reiniciar</button>
+      <label>Velocidad:
+        <select id="speed-select" onchange="simCtrl.setSpeed(this.value)">
+          <option value="1000">1×</option>
+          <option value="500" selected>2×</option>
+          <option value="250">4×</option>
+          <option value="100">10×</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <div class="sim-body">
+    <!-- Mapa de calor -->
+    <section class="sim-map" aria-label="Mapa de calor del recinto">
+      <svg id="heatmap-svg" viewBox="0 0 850 450" class="heatmap-svg"></svg>
+    </section>
+
+    <!-- Panel de recomendaciones -->
+    <aside class="sim-aside" id="rec-panel">
+      <h2 class="aside-title">🤖 Recomendaciones</h2>
+      <div id="rec-list"></div>
+    </aside>
+  </div>
+
+  <!-- Línea de tiempo de fases -->
+  <footer class="sim-timeline" id="phase-timeline">
+    <div class="timeline-phase" data-phase="antes">Antes</div>
+    <div class="timeline-phase" data-phase="primer_tiempo">1.er tiempo</div>
+    <div class="timeline-phase" data-phase="medio_tiempo">Medio tiempo</div>
+    <div class="timeline-phase" data-phase="segundo_tiempo">2.º tiempo</div>
+    <div class="timeline-phase" data-phase="salida">Salida</div>
+  </footer>
+
+  <div id="sim-status" class="sim-status"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module">
+  import { SimulationController } from '/static/js/simulation.js';
+  window.simCtrl = new SimulationController('{{ run_id }}');
+  simCtrl.init();
+</script>
+{% endblock %}

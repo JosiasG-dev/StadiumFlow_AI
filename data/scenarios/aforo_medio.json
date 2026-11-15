@@ -1,0 +1,44 @@
+{
+  "id": "aforo_medio",
+  "name": "Partido con aforo medio",
+  "event_type": "fútbol",
+  "attendance": 1400,
+  "seed": 77,
+  "mobile_share": 0.12,
+  "redirect_compliance": 0.65,
+  "anticipation_share": 0.0,
+  "phases": [
+    {"name": "antes",          "duration_min": 60, "purchase_prob": 0.25},
+    {"name": "primer_tiempo",  "duration_min": 45, "purchase_prob": 0.06},
+    {"name": "medio_tiempo",   "duration_min": 15, "purchase_prob": 0.45},
+    {"name": "segundo_tiempo", "duration_min": 45, "purchase_prob": 0.08},
+    {"name": "salida",         "duration_min": 15, "purchase_prob": 0.04}
+  ],
+  "stands": [
+    {"id":"P1","name":"Puesto 1","x":200,"y":50,  "registers_installed":4,"registers_open":3,"staff":3,"zone_capacity":40,"avg_ticket":110},
+    {"id":"P2","name":"Puesto 2","x":350,"y":30,  "registers_installed":4,"registers_open":3,"staff":3,"zone_capacity":40,"avg_ticket":110},
+    {"id":"P3","name":"Puesto 3","x":500,"y":30,  "registers_installed":4,"registers_open":3,"staff":3,"zone_capacity":40,"avg_ticket":110},
+    {"id":"P4","name":"Puesto 4","x":650,"y":50,  "registers_installed":4,"registers_open":3,"staff":3,"zone_capacity":40,"avg_ticket":110},
+    {"id":"P5","name":"Puesto 5","x":750,"y":200, "registers_installed":4,"registers_open":3,"staff":3,"zone_capacity":40,"avg_ticket":110},
+    {"id":"P6","name":"Puesto 6","x":650,"y":370, "registers_installed":4,"registers_open":3,"staff":3,"zone_capacity":40,"avg_ticket":110},
+    {"id":"P7","name":"Puesto 7","x":500,"y":400, "registers_installed":4,"registers_open":3,"staff":3,"zone_capacity":40,"avg_ticket":110},
+    {"id":"P8","name":"Puesto 8","x":350,"y":400, "registers_installed":4,"registers_open":3,"staff":3,"zone_capacity":40,"avg_ticket":110},
+    {"id":"P9","name":"Puesto 9","x":200,"y":370, "registers_installed":4,"registers_open":3,"staff":3,"zone_capacity":40,"avg_ticket":110},
+    {"id":"P10","name":"Puesto 10","x":100,"y":200,"registers_installed":4,"registers_open":2,"staff":3,"zone_capacity":40,"avg_ticket":110}
+  ],
+  "sectors": [
+    {"id":"S1","name":"Sector Norte Izq.", "x":250,"y":80,  "share":0.14},
+    {"id":"S2","name":"Sector Norte Der.", "x":550,"y":80,  "share":0.14},
+    {"id":"S3","name":"Sector Este",       "x":720,"y":210, "share":0.12},
+    {"id":"S4","name":"Sector Sur Der.",   "x":620,"y":340, "share":0.13},
+    {"id":"S5","name":"Sector Sur Izq.",   "x":280,"y":340, "share":0.13},
+    {"id":"S6","name":"Sector Oeste",      "x":130,"y":210, "share":0.12},
+    {"id":"S7","name":"Palco Norte",       "x":400,"y":60,  "share":0.11},
+    {"id":"S8","name":"Palco Sur",         "x":400,"y":360, "share":0.11}
+  ],
+  "profiles": [
+    {"name":"compra_rapida", "share":0.60, "service_seconds":40,  "patience_min":5},
+    {"name":"compra_grupo",  "share":0.28, "service_seconds":110, "patience_min":8},
+    {"name":"pedido_movil",  "share":0.12, "service_seconds":28,  "patience_min":10}
+  ]
+}
